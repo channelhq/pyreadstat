@@ -1507,9 +1507,10 @@ class TestBasic(unittest.TestCase):
         self.assertEqual(meta.variable_measure["mychar"], variable_measure["mychar"])
 
     def test_sav_buffer(self):
-        buf = open(os.path.join(self.basic_data_folder, "sample.sav")).read()
-        df, _ = pyreadstat.read_sav(data=buf)
-        self.assertTrue(df.equals(self.df_pandas))
+        with open(os.path.join(self.basic_data_folder, "sample.sav"), mode="rb") as buf:
+            df, _ = pyreadstat.read_sav(data=buf.read())
+
+            self.assertTrue(df.equals(self.df_pandas))
 
 
 if __name__ == "__main__":

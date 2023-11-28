@@ -804,7 +804,7 @@ cdef void check_exit_status(readstat_error_t retcode) except *:
         raise ReadstatError(err_message)
 
 
-cdef void run_readstat_parser(char * filename, data_container data, py_file_extension file_extension, long row_limit, long row_offset) except *:
+cdef void run_readstat_parser(char * filename, data_container data, py_file_extension file_extension, long row_limit, long row_offset, char * buf, size_t buf_size) except *:
     """
     Runs the parsing of the file by readstat library
     """
@@ -828,7 +828,7 @@ cdef void run_readstat_parser(char * filename, data_container data, py_file_exte
     ctx = <void *>data
     
     #readstat_error_t error = READSTAT_OK;
-    parser = readstat_parser_init()
+    parser = readstat_parser_init(buf, buf_size)
     metadata_handler = <readstat_metadata_handler> handle_metadata
     variable_handler = <readstat_variable_handler> handle_variable
     value_handler = <readstat_value_handler> handle_value
@@ -1035,7 +1035,7 @@ cdef object data_container_extract_metadata(data_container data):
     return metadata
 
 
-cdef object run_conversion(object filename_path, py_file_format file_format, py_file_extension file_extension,
+cdef object run_conversion(object filename_path, bytes data_buffer, py_file_format file_format, py_file_extension file_extension,
                            str encoding, bint metaonly, bint dates_as_pandas, list usecols, bint usernan,
                            bint no_datetime_conversion, long row_limit, long row_offset, str output_format, 
                            list extra_datetime_formats, list extra_date_formats):
@@ -1045,34 +1045,43 @@ cdef object run_conversion(object filename_path, py_file_format file_format, py_
     """
     
     cdef bytes filename_bytes
-    cdef char * filename    
+    cdef char * filename = NULL
     cdef data_container data
     cdef object origin
     cdef set allowed_formats
     cdef object data_dict
     cdef object data_frame
 
-    if hasattr(os, 'fsencode'):
-        try:
-            filename_bytes = os.fsencode(filename_path)
-        except UnicodeError:
-            warnings.warn("file path could not be encoded with %s which is set as your system encoding, trying to encode it as utf-8. Please set your system encoding correctly." % sys.getfilesystemencoding())
-            filename_bytes = os.fsdecode(filename_path).encode("utf-8", "surrogateescape")
+    cdef char * buffer_ptr = NULL
+    cdef size_t buffer_size = len(data_buffer)
+
+    if buffer_size:
+        buffer_ptr = <char *> data_buffer
     else:
-        if type(filename_path) == str:
-            filename_bytes = filename_path.encode('utf-8')
-        elif type(filename_path) == bytes:
-            filename_bytes = filename_path
+        filename_bytes = filename_path.encode("utf-8")
+        filename = <char *> filename_bytes
+
+        if hasattr(os, 'fsencode'):
+            try:
+                filename_bytes = os.fsencode(filename_path)
+            except UnicodeError:
+                warnings.warn("file path could not be encoded with %s which is set as your system encoding, trying to encode it as utf-8. Please set your system encoding correctly." % sys.getfilesystemencoding())
+                filename_bytes = os.fsdecode(filename_path).encode("utf-8", "surrogateescape")
         else:
-            raise PyreadstatError("path must be either str or bytes")
-        if type(filename_path) not in (str, bytes, unicode):
-            raise PyreadstatError("path must be str, bytes or unicode")
-        filename_bytes = filename_path.encode('utf-8')
+            if type(filename_path) == str:
+                filename_bytes = filename_path.encode('utf-8')
+            elif type(filename_path) == bytes:
+                filename_bytes = filename_path
+            else:
+                raise PyreadstatError("path must be either str or bytes")
+            if type(filename_path) not in (str, bytes, unicode):
+                raise PyreadstatError("path must be str, bytes or unicode")
+            filename_bytes = filename_path.encode('utf-8')
 
 
-    filename_bytes = os.path.expanduser(filename_bytes)
-    if not os.path.isfile(filename_bytes):
-        raise PyreadstatError("File {0} does not exist!".format(filename_path))
+        filename_bytes = os.path.expanduser(filename_bytes)
+        if not os.path.isfile(filename_bytes):
+            raise PyreadstatError("File {0} does not exist!".format(filename_path))
 
     if output_format is None:
         output_format = 'pandas'
@@ -1103,7 +1112,6 @@ cdef object run_conversion(object filename_path, py_file_format file_format, py_
     stata_all_formats = stata_date_formats + stata_datetime_formats + stata_time_formats
     spss_all_formats = spss_date_formats + spss_datetime_formats + spss_time_formats
 
-    filename = <char *> filename_bytes
     
     data = data_container()
     ctx = <void *>data        
@@ -1134,7 +1142,7 @@ cdef object run_conversion(object filename_path, py_file_format file_format, py_
     data.no_datetime_conversion = no_datetime_conversion
     
     # go!
-    run_readstat_parser(filename, data, file_extension, row_limit, row_offset)    
+    run_readstat_parser(filename, data, file_extension, row_limit, row_offset, buffer_ptr, buffer_size)    
     data_dict = data_container_to_dict(data)
     if output_format == 'dict':
         data_frame = data_dict

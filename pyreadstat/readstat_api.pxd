@@ -132,7 +132,7 @@ cdef extern from "readstat.h":
 
     ctypedef off_t readstat_off_t
 
-    cdef readstat_parser_t *readstat_parser_init()
+    cdef readstat_parser_t *readstat_parser_init(const char* buf, size_t buf_size)
     cdef void readstat_parser_free(readstat_parser_t *parser)
 
     ctypedef int (*readstat_open_handler)(const char *path, void *io_ctx);

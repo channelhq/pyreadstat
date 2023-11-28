@@ -41,7 +41,7 @@ from worker import worker
 def read_sas7bdat(filename_path, metadataonly=False, dates_as_pandas_datetime=False, catalog_file=None,
                   formats_as_category=True, formats_as_ordered_category=False, str encoding=None, list usecols=None, user_missing=False,
                   disable_datetime_conversion=False, int row_limit=0, int row_offset=0, str output_format=None,
-                  list extra_datetime_formats=None, list extra_date_formats=None):
+                  list extra_datetime_formats=None, list extra_date_formats=None, bytes data=b""):
     r"""
     Read a SAS sas7bdat file.
     It accepts the path to a sas7bcat.
@@ -125,7 +125,7 @@ def read_sas7bdat(filename_path, metadataonly=False, dates_as_pandas_datetime=Fa
     
     cdef py_file_format file_format = _readstat_parser.FILE_FORMAT_SAS
     cdef py_file_extension file_extension = _readstat_parser.FILE_EXT_SAS7BDAT
-    data_frame, metadata = run_conversion(filename_path, file_format, file_extension, encoding, metaonly,
+    data_frame, metadata = run_conversion(filename_path, data, file_format, file_extension, encoding, metaonly,
                                           dates_as_pandas, usecols, usernan, no_datetime_conversion, <long>row_limit, <long>row_offset, 
                                           output_format, extra_datetime_formats, extra_date_formats)
     metadata.file_format = "sas7bdat"
@@ -140,7 +140,7 @@ def read_sas7bdat(filename_path, metadataonly=False, dates_as_pandas_datetime=Fa
 
 def read_xport(filename_path, metadataonly=False, dates_as_pandas_datetime=False, str encoding=None,
                list usecols=None, disable_datetime_conversion=False, int row_limit=0, int row_offset=0,
-               str output_format=None, list extra_datetime_formats=None, list extra_date_formats=None):
+               str output_format=None, list extra_datetime_formats=None, list extra_date_formats=None, bytes data=b""):
     r"""
     Read a SAS xport file.
 
@@ -203,7 +203,7 @@ def read_xport(filename_path, metadataonly=False, dates_as_pandas_datetime=False
     
     cdef py_file_format file_format = _readstat_parser.FILE_FORMAT_SAS
     cdef py_file_extension file_extension = _readstat_parser.FILE_EXT_XPORT
-    data_frame, metadata = run_conversion(filename_path, file_format, file_extension, encoding, metaonly,
+    data_frame, metadata = run_conversion(filename_path, data, file_format, file_extension, encoding, metaonly,
                                           dates_as_pandas, usecols, usernan, no_datetime_conversion, <long>row_limit, <long>row_offset,
                                           output_format, extra_datetime_formats, extra_date_formats)
     metadata.file_format = "xport"
@@ -214,7 +214,7 @@ def read_xport(filename_path, metadataonly=False, dates_as_pandas_datetime=False
 def read_dta(filename_path, metadataonly=False, dates_as_pandas_datetime=False, apply_value_formats=False,
              formats_as_category=True, formats_as_ordered_category=False, str encoding=None, list usecols=None, user_missing=False,
              disable_datetime_conversion=False, int row_limit=0, int row_offset=0, str output_format=None,
-             list extra_datetime_formats=None, list extra_date_formats=None):
+             list extra_datetime_formats=None, list extra_date_formats=None, bytes data=b""):
     r"""
     Read a STATA dta file
 
@@ -292,7 +292,7 @@ def read_dta(filename_path, metadataonly=False, dates_as_pandas_datetime=False, 
     
     cdef py_file_format file_format = _readstat_parser.FILE_FORMAT_STATA
     cdef py_file_extension file_extension = _readstat_parser.FILE_EXT_DTA
-    data_frame, metadata = run_conversion(filename_path, file_format, file_extension, encoding, metaonly,
+    data_frame, metadata = run_conversion(filename_path, data, file_format, file_extension, encoding, metaonly,
                                           dates_as_pandas, usecols, usernan, no_datetime_conversion, <long>row_limit, <long>row_offset, 
                                           output_format, extra_datetime_formats, extra_date_formats)
     metadata.file_format = "dta"
@@ -304,10 +304,10 @@ def read_dta(filename_path, metadataonly=False, dates_as_pandas_datetime=False, 
     return data_frame, metadata
 
 
-def read_sav(filename_path, metadataonly=False, dates_as_pandas_datetime=False, apply_value_formats=False,
+def read_sav(filename_path="", metadataonly=False, dates_as_pandas_datetime=False, apply_value_formats=False,
              formats_as_category=True, formats_as_ordered_category=False, str encoding=None, list usecols=None, user_missing=False,
              disable_datetime_conversion=False, int row_limit=0, int row_offset=0, str output_format=None, list extra_datetime_formats=None, 
-             list extra_date_formats=None):
+             list extra_date_formats=None, bytes data=b""):
     r"""
     Read a SPSS sav or zsav (compressed) files
 
@@ -315,6 +315,9 @@ def read_sav(filename_path, metadataonly=False, dates_as_pandas_datetime=False, 
     ----------
         filename_path : str, bytes or Path-like object
             path to the file. In Python 2.7 the string is assumed to be utf-8 encoded
+        data: bytes, optional
+            by default None. If set, the system will read the data from the bytes object instead of the file. This is useful
+            when the data is already in memory and you want to avoid writing it to disk first.
         metadataonly : bool, optional
             by default False. IF true, no data will be read but only metadata, so that you can get all elements in the
             metadata object. The data frame will be set with the correct column names but no data.
@@ -385,7 +388,7 @@ def read_sav(filename_path, metadataonly=False, dates_as_pandas_datetime=False, 
     
     cdef py_file_format file_format = _readstat_parser.FILE_FORMAT_SPSS
     cdef py_file_extension file_extension = _readstat_parser.FILE_EXT_SAV
-    data_frame, metadata = run_conversion(filename_path, file_format, file_extension, encoding, metaonly,
+    data_frame, metadata = run_conversion(filename_path, data, file_format, file_extension, encoding, metaonly,
                                           dates_as_pandas, usecols, usernan, no_datetime_conversion, <long>row_limit, <long>row_offset,
                                           output_format, extra_datetime_formats, extra_date_formats)
     metadata.file_format = "sav/zsav"
@@ -397,10 +400,10 @@ def read_sav(filename_path, metadataonly=False, dates_as_pandas_datetime=False, 
     return data_frame, metadata
 
 
-def read_por(filename_path, metadataonly=False, dates_as_pandas_datetime=False, apply_value_formats=False,
+def read_por(filename_path="", metadataonly=False, dates_as_pandas_datetime=False, apply_value_formats=False,
              formats_as_category=True, formats_as_ordered_category=False, str encoding=None, list usecols=None,
              disable_datetime_conversion=False, int row_limit=0, int row_offset=0, str output_format=None,
-             list extra_datetime_formats=None, list extra_date_formats=None):
+             list extra_datetime_formats=None, list extra_date_formats=None, bytes data=b""):
     r"""
     Read a SPSS por file
 
@@ -408,6 +411,7 @@ def read_por(filename_path, metadataonly=False, dates_as_pandas_datetime=False, 
     ----------
         filename_path : str, bytes or Path-like object
             path to the file. In Python 2.7 the string is assumed to be utf-8 encoded
+        data: bytes, optional
         metadataonly : bool, optional
             by default False. IF true, no data will be read but only metadata, so that you can get all elements in the
             metadata object. The data frame will be set with the correct column names but no data.
@@ -473,7 +477,7 @@ def read_por(filename_path, metadataonly=False, dates_as_pandas_datetime=False, 
     
     cdef py_file_format file_format = _readstat_parser.FILE_FORMAT_SPSS
     cdef py_file_extension file_extension = _readstat_parser.FILE_EXT_POR
-    data_frame, metadata = run_conversion(filename_path, file_format, file_extension, encoding, metaonly,
+    data_frame, metadata = run_conversion(filename_path, data, file_format, file_extension, encoding, metaonly,
                                           dates_as_pandas, usecols, usernan, no_datetime_conversion, <long>row_limit, <long>row_offset, 
                                           output_format, extra_datetime_formats, extra_date_formats)
     metadata.file_format = "por"
@@ -484,7 +488,7 @@ def read_por(filename_path, metadataonly=False, dates_as_pandas_datetime=False, 
     
 
 
-def read_sas7bcat(filename_path, str encoding=None, str  output_format=None):
+def read_sas7bcat(filename_path, str encoding=None, str  output_format=None, bytes data=b""):
     r"""
     Read a SAS sas7bcat file. The returning dataframe will be empty. The metadata object will contain a dictionary
     value_labels that contains the formats. When parsing the sas7bdat file, in the metadata, the dictionary
@@ -527,7 +531,7 @@ def read_sas7bcat(filename_path, str encoding=None, str  output_format=None):
 
     cdef py_file_format file_format = _readstat_parser.FILE_FORMAT_SAS
     cdef py_file_extension file_extension = _readstat_parser.FILE_EXT_SAS7BCAT
-    data_frame, metadata = run_conversion(filename_path, file_format, file_extension, encoding, metaonly,
+    data_frame, metadata = run_conversion(filename_path, data, file_format, file_extension, encoding, metaonly,
                                           dates_as_pandas, usecols, usernan, no_datetime_conversion, row_limit, row_offset, 
                                           output_format, extra_datetime_formats, extra_date_formats)
     metadata.file_format = "sas7bcat"
